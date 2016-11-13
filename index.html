@@ -30,23 +30,23 @@
 
 var margin = {top: 20, right: 30, bottom: 40, left: 30},
     width = 960 - margin.left - margin.right,
-    height = 700 - margin.top - margin.bottom;
+    height = 300 - margin.top - margin.bottom;
 
-var x = d3.scale.linear()
-    .range([0, width]);
+var x = d3.scale.ordinal()
+    .rangeRoundBands([0, width], 0.1);
 
-var y = d3.scale.ordinal()
-    .rangeRoundBands([0, height], 0.1);
+var y = d3.scale.linear()
+    .range([0, height]);
 
 var xAxis = d3.svg.axis()
     .scale(x)
-    .orient("bottom");
+    .orient("bottom")
+    .tickSize(0)
+    .tickPadding(6);
 
 var yAxis = d3.svg.axis()
     .scale(y)
-    .orient("left")
-    .tickSize(0)
-    .tickPadding(6);
+    .orient("left");
 
 var svg = d3.select("body").append("svg")
     .attr("width", width + margin.left + margin.right)
@@ -56,29 +56,30 @@ var svg = d3.select("body").append("svg")
 
 // state ecv population vpc
 d3.tsv("data.tsv", type, function(error, data) {
-  x.domain([-100,300]);
-  y.domain(data.map(function(d) { return d.state; }));
+  x.domain(data.map(function(d) { return d.state; }));
+  y.domain([300,-100]);
 					 
   svg.selectAll(".bar")
       .data(data)
     .enter().append("rect")
       .attr("class", function(d) { return "state-"+d.state+" bar bar--" + (d.vpc < 0 ? "negative" : "positive"); })
-      .attr("x", function(d) { return x(Math.min(0, d.vpc)); })
-      .attr("y", function(d) { return y(d.state); })
-      .attr("width", function(d) { return Math.abs(x(d.vpc) - x(0)); })
-      .attr("height", y.rangeBand())
-      .on('click', function(d,i){ update(data, d.state); });
+      .attr("x", function(d) { return x(d.state); })
+      .attr("y", y(0))
+      .attr("width", x.rangeBand())
+      .attr("height",0)
+      .on('click', function(d,i){ update(data, d.state); })
+		  .append("text");
 
   update(data,"DC");
 
   svg.append("g")
       .attr("class", "x axis")
-      .attr("transform", "translate(0," + height + ")")
+      .attr("transform", "translate(0," + y(0) + ")")
       .call(xAxis);
 
   svg.append("g")
       .attr("class", "y axis")
-      .attr("transform", "translate(" + x(0) + ",0)")
+      .attr("transform", "translate(0,0)")
       .call(yAxis);
 });
 
@@ -93,15 +94,12 @@ function update(data, state) {
 	})
   data.map(function(d){
 			d.rat = (d.vpc/my_vpc-1)*100;
-      console.log(d.state + " " + d.rat);
 	})
   svg.selectAll(".bar").data(data)
       .transition().duration(500)
       .attr("class", function(d) { return "state-"+d.state+" bar bar--" + (d.rat < 0 ? "negative" : "positive"); })
-      .attr("x", function(d) { return x(Math.min(0, d.rat)); })
-      .attr("y", function(d) { return y(d.state); })
-      .attr("width", function(d) { return Math.abs(x(d.rat) - x(0)); })
-      .attr("height", y.rangeBand())
+      .attr("y", function(d) { return y(Math.max(0, d.rat)); })
+      .attr("height", function(d) { return Math.abs(y(d.rat) - y(0)); })
 }
 
 function type(d) {
