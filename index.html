@@ -67,7 +67,9 @@ d3.tsv("data.tsv", type, function(error, data) {
       .attr("y", function(d) { return y(d.state); })
       .attr("width", function(d) { return Math.abs(x(d.vpc) - x(0)); })
       .attr("height", y.rangeBand())
-      .on('click', function(d,i){ alert(i+ " "+d.state); update(data, i); });
+      .on('click', function(d,i){ update(data, d.state); });
+
+  update(data,"DC");
 
   svg.append("g")
       .attr("class", "x axis")
@@ -80,12 +82,9 @@ d3.tsv("data.tsv", type, function(error, data) {
       .call(yAxis);
 });
 
-function update(data, i) {
-  x.domain([0,0.00001]);
-  y.domain(data.map(function(d) { return d.state; }));
-
+function update(data, state) {
 	// normalize for a state! take parameter from click event!
-	var my_state = data[i].state;
+	var my_state = state;
 	var my_vpc   = 1;
 	data.map(function(d) {
 		if (my_state == d.state) {
@@ -93,18 +92,16 @@ function update(data, i) {
 		} 
 	})
   data.map(function(d){
-			d.vpc = (d.vpc/my_vpc-1)*100;
-			// console.log(d.state + " " + d.vpc);
+			d.rat = (d.vpc/my_vpc-1)*100;
+      console.log(d.state + " " + d.rat);
 	})
-  svg.selectAll(".bar")
-      .data(data)
-    .update("rect")
-      .attr("class", function(d) { return "state-"+d.state+" bar bar--" + (d.vpc < 0 ? "negative" : "positive"); })
-      .attr("x", function(d) { return x(Math.min(0, d.vpc)); })
+  svg.selectAll(".bar").data(data)
+      .transition()
+      .attr("class", function(d) { return "state-"+d.state+" bar bar--" + (d.rat < 0 ? "negative" : "positive"); })
+      .attr("x", function(d) { return x(Math.min(0, d.rat)); })
       .attr("y", function(d) { return y(d.state); })
-      .attr("width", function(d) { return Math.abs(x(d.vpc) - x(0)); })
+      .attr("width", function(d) { return Math.abs(x(d.rat) - x(0)); })
       .attr("height", y.rangeBand())
-      .on('click', function(d,i){ update(data, i);  alert(i+ " "+d.state);  });
 }
 
 function type(d) {
