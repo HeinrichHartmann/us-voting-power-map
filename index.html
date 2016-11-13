@@ -211,7 +211,14 @@ function update_map(state) {
 		map_svg.selectAll("path")
 				.data(data_map.features)
 				.style("fill", function(d) {
-						return color(rat_lookup[d.properties.short_name]);
+						if (d.properties.short_name == state) {
+								return "#333";
+						} else {
+								return color(rat_lookup[d.properties.short_name]);
+						}
+				})
+				.on("click", function(d,i) {
+						update(d.properties.short_name);
 				})
 };
 
