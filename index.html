@@ -17,6 +17,11 @@
   shape-rendering: crispEdges;
 }
 
+.highlight {
+  fill-opacity: 0.2;
+	fill: #000;
+}
+
 </style>
 <body>
 
@@ -83,6 +88,16 @@ d3.tsv("data.tsv", type, function(error, data) {
      .attr("x", function(d) { return x(d.state) + x.rangeBand()/2; })
      .attr("y", y(0));
 
+	svg.append("rect")
+				.attr("class", "highlight")
+		    .attr("id", "highlight")
+
+  d3.select("#highlight")
+				.attr("x", x("TX"))
+				.attr("y", 0)
+				.attr("width",  x.rangeBand())
+				.attr("height", height + 50)
+
   update("DC");
 
   svg.append("g")
@@ -147,7 +162,11 @@ function update_chart(state) {
 		 .text(function(d) {
 				 return (d.rat > 0 ? "x" : "/") 
 						 + (Math.abs(d.rat)).toFixed(1)
-		 })
+		 });
+
+  d3.select("#highlight")
+		.transition().duration(duration)
+    .attr("x", x(state))
 }
 
 function update(state) {
