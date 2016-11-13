@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.bar--positive {
+  fill: steelblue;
+}
+
+.bar--negative {
+  fill: darkorange;
+}
+
+.axis text {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+</style>
+<body>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script>
+
+// https://aws.heinrichhartmann.com/pair/
+
+var margin = {top: 20, right: 30, bottom: 40, left: 30},
+    width = 960 - margin.left - margin.right,
+    height = 1500 - margin.top - margin.bottom;
+
+var x = d3.scale.linear()
+    .range([0, width]);
+
+var y = d3.scale.ordinal()
+    .rangeRoundBands([0, height], 0.1);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .tickSize(0)
+    .tickPadding(6);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+// state ecv population vpc
+d3.tsv("data.tsv", type, function(error, data) {
+  x.domain([-100,300]);
+  y.domain(data.map(function(d) { return d.state; }));
+					 
+  svg.selectAll(".bar")
+      .data(data)
+    .enter().append("rect")
+      .attr("class", function(d) { return "state-"+d.state+" bar bar--" + (d.vpc < 0 ? "negative" : "positive"); })
+      .attr("x", function(d) { return x(Math.min(0, d.vpc)); })
+      .attr("y", function(d) { return y(d.state); })
+      .attr("width", function(d) { return Math.abs(x(d.vpc) - x(0)); })
+      .attr("height", y.rangeBand())
+      .on('click', function(d,i){ alert(i+ " "+d.state); update(data, i); });
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .attr("transform", "translate(" + x(0) + ",0)")
+      .call(yAxis);
+});
+
+function update(data, i) {
+  x.domain([0,0.00001]);
+  y.domain(data.map(function(d) { return d.state; }));
+
+	// normalize for a state! take parameter from click event!
+	var my_state = data[i].state;
+	var my_vpc   = 1;
+	data.map(function(d) {
+		if (my_state == d.state) {
+			my_vpc = d.vpc;
+		} 
+	})
+  data.map(function(d){
+			d.vpc = (d.vpc/my_vpc-1)*100;
+			// console.log(d.state + " " + d.vpc);
+	})
+  svg.selectAll(".bar")
+      .data(data)
+    .update("rect")
+      .attr("class", function(d) { return "state-"+d.state+" bar bar--" + (d.vpc < 0 ? "negative" : "positive"); })
+      .attr("x", function(d) { return x(Math.min(0, d.vpc)); })
+      .attr("y", function(d) { return y(d.state); })
+      .attr("width", function(d) { return Math.abs(x(d.vpc) - x(0)); })
+      .attr("height", y.rangeBand())
+      .on('click', function(d,i){ update(data, i);  alert(i+ " "+d.state);  });
+}
+
+function type(d) {
+  d.vpc = +d.vpc;
+  //	console.log("Found " + d.vpc + " " + d.state );
+  return d;
+}
+
+</script>
