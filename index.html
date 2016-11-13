@@ -2,14 +2,6 @@
 <meta charset="utf-8">
 <style>
 
-.bar--positive {
-  fill: steelblue;
-}
-
-.bar--negative {
-  fill: darkorange;
-}
-
 .axis text {
   font: 10px sans-serif;
 }
@@ -28,8 +20,7 @@
 </style>
 <body>
 
-<h1>Eloctoral College Map</h1>
-
+<h2 id="title"></h2>
 <svg id="chart"></svg>
 <svg id="map"/></svg>
 
@@ -62,6 +53,11 @@ var yAxis = d3.svg.axis()
     .scale(y)
     .orient("left");
 
+// Define linear scale for output
+var color = d3.scale.linear()
+    .domain([-3,3])
+		.range(["black","darkorange"]);
+
 // state ecv population vpc
 d3.tsv("data.tsv", type, function(error, data) {
   data_vote = data;
@@ -71,7 +67,7 @@ d3.tsv("data.tsv", type, function(error, data) {
   svg.selectAll(".bar")
       .data(data)
     .enter().append("rect")
-      .attr("class", function(d) { return "state-"+d.state+" bar bar--" + (d.vpc < 0 ? "negative" : "positive"); })
+      .attr("class", "bar")
       .attr("x", function(d) { return x(d.state); })
       .attr("y", y(0))
       .attr("width", x.rangeBand())
@@ -134,8 +130,6 @@ function update_data(state) {
 			}
 			rat_lookup[d.state] = d.rat
 	});
-
-	console.log(rat_lookup);
 }
 
 function update_chart(state) {
@@ -144,9 +138,9 @@ function update_chart(state) {
 	var duration = 750;
   svg.selectAll(".bar").data(data)
       .transition().duration(duration)
-      .attr("class", function(d) { return "bar bar--" + (d.rat < 0 ? "negative" : "positive"); })
       .attr("y", function(d) { return y(Math.max(0, d.rat)); })
       .attr("height", function(d) { return Math.abs(y(d.rat) - y(0)); })
+      .style("fill", function(d) { return color(d.rat); });
 
   var labeld = 10;
 	svg.selectAll(".barlabel").data(data)
@@ -161,6 +155,7 @@ function update(state) {
 		update_data(state);
 		update_chart(state);
 		update_map(state);
+		d3.select("#title").text(state);
 }
 
 function type(d) {
@@ -187,10 +182,6 @@ var projection = d3.geo.albersUsa()
 var path = d3.geo.path()      // path generator that will convert GeoJSON to SVG paths
 		.projection(projection);  // tell path generator to use albersUsa projection
 			
-// Define linear scale for output
-var color = d3.scale.linear()
-    .domain([-3,3])
-		.range(["darkorange","steelblue"]);
 
 
 d3.json("us-states.json", function(data) {
