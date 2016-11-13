@@ -30,7 +30,7 @@
 
 var margin = {top: 20, right: 30, bottom: 40, left: 30},
     width = 960 - margin.left - margin.right,
-    height = 1500 - margin.top - margin.bottom;
+    height = 700 - margin.top - margin.bottom;
 
 var x = d3.scale.linear()
     .range([0, width]);
@@ -96,7 +96,7 @@ function update(data, state) {
       console.log(d.state + " " + d.rat);
 	})
   svg.selectAll(".bar").data(data)
-      .transition()
+      .transition().duration(500)
       .attr("class", function(d) { return "state-"+d.state+" bar bar--" + (d.rat < 0 ? "negative" : "positive"); })
       .attr("x", function(d) { return x(Math.min(0, d.rat)); })
       .attr("y", function(d) { return y(d.state); })
