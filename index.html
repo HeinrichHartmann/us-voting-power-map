@@ -27,14 +27,24 @@
 
 </style>
 <body>
+
+<h1>Eloctoral College Map</h1>
+
+<svg id="chart"></svg>
+<svg id="map"/></svg>
+
 <script src="//d3js.org/d3.v3.min.js"></script>
 <script>
-
-// https://aws.heinrichhartmann.com/pair/
 
 var margin = {top: 20, right: 30, bottom: 40, left: 30},
     width = 1500 - margin.left - margin.right,
     height = 300 - margin.top - margin.bottom;
+
+var svg = d3.select("#chart")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 var x = d3.scale.ordinal()
     .rangeRoundBands([0, width], 0.1);
@@ -52,14 +62,9 @@ var yAxis = d3.svg.axis()
     .scale(y)
     .orient("left");
 
-var svg = d3.select("body").append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
 // state ecv population vpc
 d3.tsv("data.tsv", type, function(error, data) {
+  data_vote = data;
   x.domain(data.map(function(d) { return d.state; }));
   y.domain([3,-3]);
 					 
@@ -71,7 +76,7 @@ d3.tsv("data.tsv", type, function(error, data) {
       .attr("y", y(0))
       .attr("width", x.rangeBand())
       .attr("height",0)
-      .on('click', function(d,i){ update(data, d.state); })
+      .on('click', function(d,i){ update(d.state); })
 		  .append("text");
 
 	svg.selectAll(".barlabel")
@@ -82,7 +87,7 @@ d3.tsv("data.tsv", type, function(error, data) {
      .attr("x", function(d) { return x(d.state) + x.rangeBand()/2; })
      .attr("y", y(0));
 
-  update(data,"DC");
+  update("DC");
 
   svg.append("g")
       .attr("class", "x axis")
@@ -106,7 +111,12 @@ d3.tsv("data.tsv", type, function(error, data) {
 
 });
 
-function update(data, state) {
+var rat_lookup = {}
+var data_vote;
+var data_map;
+
+function update_data(state) {
+	data = data_vote;
 	// normalize for a state! take parameter from click event!
 	var my_state = state;
 	var my_vpc   = 1;
@@ -114,19 +124,27 @@ function update(data, state) {
 		if (my_state == d.state) {
 			my_vpc = d.vpc;
 		} 
-	})
+	});
+
   data.map(function(d){
 			if (d.vpc > my_vpc) {
 					d.rat = (d.vpc/my_vpc-1)
 			} else {
 					d.rat = -(my_vpc/d.vpc-1)
 			}
-	})
+			rat_lookup[d.state] = d.rat
+	});
+
+	console.log(rat_lookup);
+}
+
+function update_chart(state) {
+	data = data_vote;
 
 	var duration = 750;
   svg.selectAll(".bar").data(data)
       .transition().duration(duration)
-      .attr("class", function(d) { return "state-"+d.state+" bar bar--" + (d.rat < 0 ? "negative" : "positive"); })
+      .attr("class", function(d) { return "bar bar--" + (d.rat < 0 ? "negative" : "positive"); })
       .attr("y", function(d) { return y(Math.max(0, d.rat)); })
       .attr("height", function(d) { return Math.abs(y(d.rat) - y(0)); })
 
@@ -137,7 +155,12 @@ function update(data, state) {
 				 return (d.rat > 0 ? "x" : "/") 
 						 + (Math.abs(d.rat)).toFixed(1)
 		 })
-						
+}
+
+function update(state) {
+		update_data(state);
+		update_chart(state);
+		update_map(state);
 }
 
 function type(d) {
@@ -146,6 +169,51 @@ function type(d) {
   return d;
 }
 
+/////////////////////////
+
+var map_height=500;
+
+//Create SVG element and append map to the SVG
+var map_svg = d3.select("#map")
+		.attr("width", 1500)
+		.attr("height", map_height);
+
+// D3 Projection
+var projection = d3.geo.albersUsa()
+		.translate([width/2, map_height/2])    // translate to center of screen
+		.scale([1000]);          // scale things down so see entire US
+        
+// Define path generator
+var path = d3.geo.path()      // path generator that will convert GeoJSON to SVG paths
+		.projection(projection);  // tell path generator to use albersUsa projection
+			
+// Define linear scale for output
+var color = d3.scale.linear()
+    .domain([-3,3])
+		.range(["darkorange","steelblue"]);
+
+
+d3.json("us-states.json", function(data) {
+		data_map = data;
+		map_svg.selectAll("path")
+				.data(data_map.features)
+				.enter()
+				.append("path")
+				.attr("d", path)
+				.style("stroke", "#000")
+				.style("stroke-width", "1")
+				.style("fill", color(0));
+		update_map();
+});
+
+function update_map(state) {
+		if (!data_map) { return; }
+		map_svg.selectAll("path")
+				.data(data_map.features)
+				.style("fill", function(d) {
+						return color(rat_lookup[d.properties.short_name]);
+				})
+};
+
 </script>
-
-
+</body>
