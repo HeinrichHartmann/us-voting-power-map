@@ -26,9 +26,15 @@
 <body>
 
 <h2 id="title"></h2>
-<svg id="chart"></svg>
-<svg id="map"/></svg>
+Click on a state to see in green the states that have less voting power per capita and in red the ones with more voting power per capita.<br><br>
 
+<svg id="map"></svg>
+
+Green color indicates less voting power per capita than the selected state and red color indicatesmore voting power per capita than in the selected state <br><br>
+
+You can click on a barchart to select a state and view the relative voting power per capita of this state in comparison to other states. <br><br>
+
+<svg id="chart"/></svg>
 <script src="//d3js.org/d3.v3.min.js"></script>
 <script>
 
@@ -160,7 +166,7 @@ function update_chart(state) {
 	svg.selectAll(".barlabel").data(data)
 		 .attr("y", height + 30)
 		 .text(function(d) {
-				 return (d.rat > 0 ? "x" : "/") 
+				 return (d.rat > 0 ? "+" : "-") 
 						 + (Math.abs(d.rat)).toFixed(1)
 		 });
 
