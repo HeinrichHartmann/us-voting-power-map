@@ -22,6 +22,14 @@
 	fill: #000;
 }
 
+#tooltip {
+position: absolute;           
+padding: 20px;             
+margin: 10px;
+background: lightsteelblue;   
+border: 1px; 
+}
+
 </style>
 <body>
 
@@ -35,6 +43,17 @@ Green color indicates less voting power per capita than the selected state and r
 You can click on a barchart to select a state and view the relative voting power per capita of this state in comparison to other states. <br><br>
 
 <svg id="chart"/></svg>
+
+<div id="tooltip">
+	<ul>
+		<li>State: <span id="state"></span></li>
+		<li>Votes: <span id="votes"></span></li>
+		<li>Popultation: <span id="population"></span></li>
+		<li>Ratio: <span id="rat"></span></li>
+		<li>Comarison State: <span id="selstate"></span></li>
+	</ul>
+</div>
+
 <script src="//d3js.org/d3.v3.min.js"></script>
 <script>
 
@@ -103,8 +122,6 @@ d3.tsv("data.tsv", type, function(error, data) {
       .on('click', function(d,i){ update(d.state); })
 		  .append("text");
 
-     
-
 	svg.selectAll(".barlabel")
      .data(data)
      .enter().append("text")
@@ -147,14 +164,17 @@ d3.tsv("data.tsv", type, function(error, data) {
 });
 
 var rat_lookup = {}
+var d_lookup = {}
 var data_vote;
 var data_map;
+var my_state = state;
+	var my_vpc   = 1;
 
 function update_data(state) {
 	data = data_vote;
 	// normalize for a state! take parameter from click event!
-	var my_state = state;
-	var my_vpc   = 1;
+  my_state = state;
+  my_vpc   = 1;
 	data.map(function(d) {
 		if (my_state == d.state) {
 			my_vpc = d.vpc;
@@ -164,6 +184,7 @@ function update_data(state) {
   data.map(function(d){
       d.rat = my_vpc/d.vpc
 			rat_lookup[d.state] = d.rat
+			d_lookup[d.state] = d
 	});
 }
 
@@ -220,8 +241,6 @@ var projection = d3.geo.albersUsa()
 // Define path generator
 var path = d3.geo.path()      // path generator that will convert GeoJSON to SVG paths
 		.projection(projection);  // tell path generator to use albersUsa projection
-			
-
 
 d3.json("us-states.json", function(data) {
 		data_map = data;
@@ -232,8 +251,26 @@ d3.json("us-states.json", function(data) {
 				.attr("d", path)
 				.style("stroke", "#000")
 				.style("stroke-width", "1")
-				.style("fill", color(0));
-		update_map();
+				.style("fill", color(0))
+				.on("click", function(d,i) {
+						update(d.properties.short_name);
+				})
+        .on("mouseover", function(d) { 
+           var e = d_lookup[d.properties.short_name];
+           d3.select("#state").text("" + d.properties.name);
+           d3.select("#selstate").text("" + my_state);
+           d3.select("#population").text(e.population); 
+           d3.select("#votes").text(e.ecv); 
+           d3.select("#rat").text(e.rat);
+           d3.select("#tooltip")
+             .style("left", (d3.event.pageX) + "px")     
+             .style("top", (d3.event.pageY - 28) + "px");
+
+        })
+
+//        .on("mouseout", function(d) {});
+
+update_map();
 });
 
 function update_map(state) {
@@ -246,9 +283,6 @@ function update_map(state) {
 						} else {
 								return color(rat_lookup[d.properties.short_name]);
 						}
-				})
-				.on("click", function(d,i) {
-						update(d.properties.short_name);
 				})
 };
 
