@@ -1,0 +1,27 @@
+.axis text {
+    font: 10px sans-serif;
+}
+
+.barlabel {
+    font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+
+.highlight {
+    fill-opacity: 0.2;
+    fill: #000;
+}
+
+#tooltip {
+    position: absolute;
+    padding: 20px;
+    margin: 10px;
+    background: lightsteelblue;
+    border: 1px;
+}
