@@ -1,23 +1,37 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <link rel="stylesheet" type="text/css" href="style.css">
+<script src="//d3js.org/d3.v3.min.js"></script>
 <body>
-<h2 id="title"></h2>
-<div id="tooltip">
-  <ul>
-    <li>State: <span id="state"></span></li>
-    <li>Votes: <span id="votes"></span></li>
-    <li>Popultation: <span id="population"></span></li>
-    <li>Ratio: <span id="rat"></span></li>
-    <li>Comarison State: <span id="selstate"></span></li>
-  </ul>
+
+<div class="tagline">
+    One vote in <span class="B-state-full"></span>
+    <br> =
+    <br> <span class="rat"></span> votes in <span class="A-state-full"></span>.
 </div>
 
-<svg id="map"></svg>
+<table width="100%">
+  <tr>
+    <td>State</td>
+    <td width="200px"><span class="A-state-full"/></td>
+    <td width="200px"><span class="B-state-full"/></td>
+  </tr>
+  <tr>
+    <td>Population</td>
+    <td><span class="A-population"/></td>
+    <td><span class="B-population"/></td>
+  </tr>
+  <tr>
+    <td>Electors</td>
+    <td><span class="A-votes"/></td>
+    <td><span class="B-votes"/></td>
+  </tr>
+</table>
 
-<svg id="chart"/></svg>
+<svg id="svg-map"></svg>
 
-<script src="//d3js.org/d3.v3.min.js"></script>
+<svg id="svg-chart"></svg>
+
 <script src="script.js"></script>
 
 </body>

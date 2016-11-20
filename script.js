@@ -1,8 +1,21 @@
+var rat_lookup   = {};
+var d_lookup     = {};
+var state_lookup = {};
+var data_vote;
+var data_map;
+var stateA = "KS";
+var stateB = "CA";
+var my_vpc   = 1;
+
+function numberWithCommas(x) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 var margin = {top: 20, right: 30, bottom: 40, left: 30},
     width = 1500 - margin.left - margin.right,
     height = 300 - margin.top - margin.bottom;
 
-var svg = d3.select("#chart")
+var svg = d3.select("#svg-chart")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
     .append("g")
@@ -29,17 +42,9 @@ var color = d3.scale.linear()
     .domain([0,1,4])
     .range(["#d95f0e","#fff7bc","#2ca25f"]);
 
-var rat_lookup = {};
-var d_lookup = {};
-var data_vote;
-var data_map;
-var my_state = state;
-var my_vpc   = 1;
-
 
 function type(d) {
   d.vpc = +d.vpc;
-  //    console.log("Found " + d.vpc + " " + d.state );
   return d;
 }
 
@@ -76,7 +81,8 @@ function init() {
       .attr("y", y(0))
       .attr("width", x.rangeBand())
       .attr("height",0)
-      .on('click', function(d,i){ update(d.state); })
+      .on('click', function(d){ update(d.state, stateB); })
+      .on("mouseover", function(d) { update(stateA, d.state); })
       .append("text");
 
     svg.selectAll(".barlabel")
@@ -86,6 +92,7 @@ function init() {
       .attr("text-anchor","middle")
       .attr("x", function(d) { return x(d.state) + x.rangeBand()/2; })
       .attr("y", y(0));
+
 
     // highlight rectangle
     svg.append("rect")
@@ -119,24 +126,24 @@ function init() {
       .attr("stroke", "black");
 
     // set current state
-    update("DC");
-
+    update(stateA, stateB);
   });
 }
 
 /////////////////////////
 
-var map_height=500;
+var map_height = 400;
+var map_width = 756;
 
 //Create SVG element and append map to the SVG
-var map_svg = d3.select("#map")
-    .attr("width", 1500)
+var map_svg = d3.select("#svg-map")
+    .attr("width", map_width)
     .attr("height", map_height);
 
 // D3 Projection
 var projection = d3.geo.albersUsa()
-  .translate([width/2, map_height/2])    // translate to center of screen
-  .scale([1000]);          // scale things down so see entire US
+  .translate([map_width/2-60, map_height/2])    // translate to center of screen
+  .scale([800]);          // scale things down so see entire US
 
 // Define path generator
 var path = d3.geo.path()      // path generator that will convert GeoJSON to SVG paths
@@ -144,6 +151,10 @@ var path = d3.geo.path()      // path generator that will convert GeoJSON to SVG
 
 d3.json("us-states.json", function(data) {
   data_map = data;
+  data.features.map(function(d) {
+    state_lookup[d.properties.short_name] = d.properties.name;
+  });
+
   map_svg.selectAll("path")
     .data(data_map.features)
     .enter()
@@ -152,83 +163,106 @@ d3.json("us-states.json", function(data) {
     .style("stroke", "#000")
     .style("stroke-width", "1")
     .style("fill", color(0))
-    .on("click", function(d,i) {
-      update(d.properties.short_name);
-    })
-    .on("mouseover", function(d) {
-      var e = d_lookup[d.properties.short_name];
-      d3.select("#state").text("" + d.properties.name);
-      d3.select("#selstate").text("" + my_state);
-      d3.select("#population").text(e.population);
-      d3.select("#votes").text(e.ecv);
-      d3.select("#rat").text(e.rat);
-      d3.select("#tooltip")
-        .style("left", (d3.event.pageX) + "px")
-        .style("top", (d3.event.pageY - 28) + "px");
+    .on("click", function(d) { update(d.properties.short_name, stateB); })
+    .on("mouseover", function(d) { update(stateA, d.properties.short_name); });
 
-    });
-  update_map();
+  update(stateA, stateB);
 });
 
-function update_map(state) {
+function update_hover(state){
+
+  update_map(stateA, state);
+}
+
+function update_map() {
   if (!data_map) { return; }
   map_svg.selectAll("path")
     .data(data_map.features)
     .style("fill", function(d) {
-      if (d.properties.short_name == state) {
+      if (d.properties.short_name == stateA) {
         return "#333";
       } else {
         return color(rat_lookup[d.properties.short_name]);
       }
+    })
+    .style("stroke-width",function(d){
+      if (d.properties.short_name == stateB) {
+        return 2;
+      } else {
+        return 1;
+      }
     });
 };
 
-function update_chart(state) {
+function update_chart() {
   data = data_vote;
 
   var duration = 750;
   svg.selectAll(".bar").data(data)
     .transition().duration(duration)
-    .attr("y", function(d) { return y(Math.max(0, d.rat)); })
-    .attr("height", function(d) { return Math.abs(y(d.rat) - y(0)); })
-    .style("fill", function(d) { return color(d.rat); });
+    .attr("y", function(d) { return y(Math.max(0, 1/d.rat)); })
+    .attr("height", function(d) { return Math.abs(y(1/d.rat) - y(0)); })
+    .style("fill", function(d) { return color(d.rat); })
+    .style("stroke",function(d){
+      if (d.state == stateB) {
+        return "black";
+      } else {
+        return null;
+      }
+    });
 
   var labeld = 10;
   svg.selectAll(".barlabel").data(data)
     .attr("y", height + 30)
     .text(function(d) {
-      return (d.rat > 0 ? "+" : "-") + (Math.abs(d.rat)).toFixed(1);
+        return d.rat.toFixed(1);
     });
-
   d3.select("#highlight")
     .transition().duration(duration)
-    .attr("x", x(state));
+    .attr("x", x(stateA));
+
 }
 
-function update_data(state) {
+function update_data() {
   data = data_vote;
-  // normalize for a state! take parameter from click event!
-  my_state = state;
-  my_vpc   = 1;
-  data.map(function(d) {
-    if (my_state == d.state) {
+  // reset VPC
+  my_vpc = null;
+  data_vote.map(function(d) {
+    if (stateA == d.state) {
       my_vpc = d.vpc;
     }
   });
-
-  data.map(function(d){
+  // update ratios
+  data_vote.map(function(d){
     d.rat = my_vpc/d.vpc;
     rat_lookup[d.state] = d.rat;
     d_lookup[d.state] = d;
   });
 }
 
-function update(state) {
-  update_data(state);
-  update_chart(state);
-  update_map(state);
-  d3.select("#title").text(state);
+function update_table() {
+  var d = d_lookup[stateA];
+  var e = d_lookup[stateB];
+  d3.selectAll(".A-state").text("" + stateA);
+  d3.selectAll(".A-state-full").text("" + state_lookup[stateA]);
+  d3.selectAll(".A-population").text(numberWithCommas("" + d.population));
+  d3.selectAll(".A-votes").text("" + d.ecv);
+
+  d3.selectAll(".B-state").text("" + stateB);
+  d3.selectAll(".B-state-full").text("" + state_lookup[stateB]);
+  d3.selectAll(".B-population").text("" + numberWithCommas(e.population));
+  d3.selectAll(".B-votes").text(e.ecv);
+
+  d3.selectAll(".rat").text((1/e.rat).toFixed(2));
 }
 
+function update(_stateA, _stateB) {
+  stateA = _stateA;
+  stateB = _stateB;
+  update_data();
+  update_chart();
+  update_map();
+  update_table();
+}
 
 init();
